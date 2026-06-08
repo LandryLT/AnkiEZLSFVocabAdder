@@ -1,0 +1,1 @@
+tqdm_format = '{desc}: {percentage:3.0f}%|{bar:20}|' + ' [{n_fmt}/{total_fmt}]'
