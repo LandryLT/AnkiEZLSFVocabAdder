@@ -10,5 +10,9 @@ class ElixResult(NamedTuple):
     typology: str
     meanings: list[ElixMeanings]
 
+class SPResult(NamedTuple):
+    gloss: str
+    sign_writings: list[str]
+
 class ScrapperResult(ElixResult):
     sign_writings: list[str]

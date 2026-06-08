@@ -1,0 +1,1 @@
+anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/EZAnki/collection.anki2
