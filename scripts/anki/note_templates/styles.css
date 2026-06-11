@@ -44,7 +44,9 @@ button {
 	border-top-left-radius: 0;
 	margin-top: 0.5rem;
 }
-
+#defsigns {
+	margin-top: 0.5rem;
+}
 .main_container, .def_container, #word_signs_container {
     display: flex;
     flex-direction: column;
