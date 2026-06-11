@@ -4,30 +4,47 @@ from scripts.caching.cacheSearch import SearchCache
 import subprocess
 from uuid import uuid4
 import os
+import asyncio
 
 elix_cache = SearchCache("./cache/elix")
+video_download_cache = SearchCache("./cache/video_dnwld")
 download_folder = "./cache/vids/src/"
 convert_folder = "./cache/vids/cnv/"
+
 class ElixScrapper(Scrapper):
     def __init__(self, session):
         super().__init__(session)
 
+
     async def searchWord(self, search_term: str) -> ElixResult:
         self.logger.info(f"Searching Elix.fr for {search_term}")
-        result = await self.__queryWord(await self.__searchWord(search_term))
+        rez = await self.__searchWord(search_term)
+        if rez:
+            return await self.__queryWord(rez)
+        else:
+            return None
+
+
+    async def downloadVideos(self, result: ElixResult) -> ElixResult:
+        # TODO: Caching seems to be broken, doesn't seems to read info from cache.
+        download_co = []
+        for m in result.meanings:
+            for url in m.word_signs_url:
+                download_co.append(self.__downloadVideo(url, result.gloss, "sign"))
+            download_co.append(self.__downloadVideo(m.def_signs_url, result.gloss, "def")) if m.def_signs_url else None
+        downloaded_paths = await asyncio.gather(*download_co, return_exceptions=True)
         new_meanings = []
         for m in result.meanings:
-            new_sign_urls = []
-            for sign_url in m.word_signs_urls:
-                new_sign_urls.append(await self.__downloadVideo(sign_url, search_term))
-            new_def_urls = []
-            for def_url in m.def_signs_urls:
-                new_def_urls.append(await self.__downloadVideo(def_url, search_term))
-            new_meanings.append(ElixMeanings(m.definition, new_sign_urls, new_def_urls))
+            new_word_sign = []
+            for _ in m.word_signs_url:
+                new_word_sign.append(downloaded_paths.pop(0))
+            new_def_sign = downloaded_paths.pop(0) if m.def_signs_url else None
+            new_meanings.append(ElixMeanings(m.definition, new_word_sign, new_def_sign))
         return result._replace(meanings=new_meanings)
 
-    async def __downloadVideo(self, url:str, search_term:str):
-        f_name = f"{search_term}_{uuid4()}"
+
+    async def __downloadVideo(self, url:str, search_term:str, prefix:str):
+        f_name = f"{prefix}_{search_term}_{uuid4()}"
         download_path = download_folder + f"{f_name}.mp4"
         output_path = convert_folder + f"{f_name}.webm"
         async with self.session.get(url) as resp:
@@ -37,12 +54,13 @@ class ElixScrapper(Scrapper):
                     f.write(chunk)
         self.__convertVideo(download_path, output_path)
         return output_path
-    
+
+
     def __convertVideo(self, in_path: str, out_path: str):
         subprocess.run([
         "./ffmpeg/bin/ffmpeg.exe", 
-        "-hide_banner", "-loglevel error",
-        "-i", in_path,
+        "-hide_banner", "-loglevel", "error",
+        "-i", in_path, "-filter:v", "scale=360:-1",
         "-c:v", "libvpx",
         "-crf", "10",
         "-b:v", "8M",
@@ -50,19 +68,26 @@ class ElixScrapper(Scrapper):
         out_path
     ], check=True)
 
+
     async def __searchWord(self, search_term: str) -> str:
         self.logger.debug(f"Checking search term for {search_term}")
-        data = (await self._getJSONData("data", "https://api.elix-lsf.fr/suggests?q=", search_term, "&limit=10&fuzzy=1"))[0]
-        return data
+        data = (await self._getJSONData("data", "https://api.elix-lsf.fr/suggests?q=", search_term, "&limit=10&fuzzy=1"))
+        if data:
+            return data[0]
+        return None
+
 
     async def __queryWord(self, word: str) -> ElixResult:
         self.logger.debug(f"Getting data for {word}")
         data = (await self._getJSONData("data", "https://api.elix-lsf.fr/words?q=", word))[0]
         meanings = []
         for m in data["meanings"]:
-            meanings.append(ElixMeanings(m["definition"], [ws["uri"] for ws in m["wordSigns"]], [ws["uri"] for ws in m["definitionSigns"]]))
+            ws = [w["uri"] for w in m["wordSigns"]]
+            ds = None if not m["definitionSigns"] else m["definitionSigns"][0]["uri"]
+            meanings.append(ElixMeanings(m["definition"], ws, ds))
 
         return ElixResult(data["name"], data["typology"], meanings)
+
 
     @staticmethod
     def clearCache():
@@ -71,5 +96,6 @@ class ElixScrapper(Scrapper):
         for f in os.listdir(convert_folder):
             os.remove(convert_folder+f)
         elix_cache.clearCache()
+        video_download_cache.clearCache()
             
     

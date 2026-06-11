@@ -1,6 +1,46 @@
-{{Name}}
-{{Typology}}
-<div id="definitions">{{Definitions}}</div>
-<div id="wordsigns">{{Word Signs}}</div>
-<div id="defsigns"></div>{{Definition Signs}}</div>
-<div id="signwritings">{{Sign Writings}}</div>
+<div id="back_main_container" class="main_container">
+    <div class="def_container">
+        <div class="name_type">
+            {{Name}}
+            {{Typology}}
+        </div>
+        <div id="definitions">{{Definitions}}</div>
+        <div id="defsigns"><div id="defsigns_vids">{{Definition Signs}}</div></div>
+        <button id="show_def_sign">Show definition in LSF</button>
+    </div>
+    <div id="signs_container">
+        <div id="word_signs_container">
+            <div id="wordsigns">{{Word Signs}}</div>
+            <button id="show_all_signs">Show all signs</button>
+        </div>
+        <div id="signwritings">{{Sign Writings}}</div>
+    </div>
+</div>
+<script>
+    function showAllSigns(){
+        const all_vids = document.querySelectorAll("#wordsigns > .video")
+        all_vids.forEach(x => x.style.display = "")
+        document.getElementById("show_all_signs").style.display = "none"
+    }
+    function showAllDefSigns(){
+        document.getElementById("defsigns").style.display = ""
+        document.getElementById("show_def_sign").style.display = "none"
+    }
+    
+    function initCard(){
+        const first_vid = document.querySelector("#wordsigns > .video:first-child")
+        const all_sign_vids = document.querySelectorAll("#wordsigns > .video")
+        document.getElementById("defsigns").style.display = "none"
+        
+        const def_vids = document.querySelectorAll(".def_sign")
+        if (def_vids.length > 0) {
+            document.getElementById("show_def_sign").onclick = showAllDefSigns
+        }
+        if (all_sign_vids.length > 1){
+            document.getElementById("show_all_signs").onclick = showAllSigns
+        }
+        all_sign_vids.forEach(x => x.style.display = "none")
+        first_vid.style.display = ""
+    }
+    initCard()
+</script>

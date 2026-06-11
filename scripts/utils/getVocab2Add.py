@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 
 vocab_filepath = "./vocab2add.txt"
 
@@ -16,3 +17,6 @@ def getVocab2Add() -> list[str]:
             except UnicodeDecodeError:
                 pass
     return vocab_list
+
+def clearVocab2Add():
+    Path(vocab_filepath).touch()

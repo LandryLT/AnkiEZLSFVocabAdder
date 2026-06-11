@@ -43,9 +43,9 @@ class Ankifier():
                 return
             all_ids = [n.id for n in all_notes]
             all_names = [re.sub(r'<[^>]*>', '', n["Name"]) for n in all_notes]
-            all_meanings = [n["Definitions"] for n in all_notes]
-            all_word_signs = [n["Word Signs"] for n in all_notes]
-            all_sign_writings = [n["Sign Writings"] for n in all_notes]
+            # all_meanings = [n["Definitions"] for n in all_notes]
+            # all_word_signs = [n["Word Signs"] for n in all_notes]
+            # all_sign_writings = [n["Sign Writings"] for n in all_notes]
 
             name_groups = group_by(range(len(all_notes)), all_names)
             deleted_notes = False
@@ -72,7 +72,7 @@ class Ankifier():
         oldest_note = all_notes[indices[0]]
         newest_note = all_notes[indices[-1]]
         for field_name in newest_note.keys():
-            if field_name in oldest_note and field_name != "Kanjis":
+            if field_name in oldest_note:
                 oldest_note[field_name] = newest_note[field_name]
         if not oldest_note in new_notes:
             self.col.update_note(oldest_note)

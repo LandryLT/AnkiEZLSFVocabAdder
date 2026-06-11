@@ -1,1 +1,5 @@
+use_cache=True
+delete_cache_on_complete=False
+delete_vocablist_on_complete=False
 anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/EZAnki/collection.anki2
+anki_collection_deduplication=UPDATE

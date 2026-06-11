@@ -1,5 +1,5 @@
 from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
-from scripts.scrappers.ElixScrapper import ElixScrapper, elix_cache
+from scripts.scrappers.ElixScrapper import ElixScrapper, elix_cache, video_download_cache
 from scripts.scrappers.ScrapperResults import ScrapperResult, ElixResult, SPResult
 from scripts.scrappers.SignPuddleScrapper import SignPuddleScrapper, signpuddle_cache
 from tqdm.asyncio import tqdm
@@ -55,17 +55,43 @@ class VocabScrapper():
         elix_sem = Semaphore(10)
         clearConsole()
         elix_results = await self._elixSearch(vocab_list, elix_sem)
+        elix_downloads_sem = Semaphore(3)
+        clearConsole()
+        dwnl_elix_results = await self._downloadVideos(elix_results, elix_downloads_sem)
         sp_sem = Semaphore(1)
         clearConsole()
-        sp_results = await self._SPSearch(elix_results, sp_sem)
+        sp_results = await self._SPSearch(dwnl_elix_results, sp_sem)
         clearConsole()
 
         output = []
-        for elix, spud in zip(elix_results, [sp.sign_writings for sp in sp_results]):
+        for elix, spud in zip(dwnl_elix_results, [sp.sign_writings for sp in sp_results]):
             new_sr = ScrapperResult(**elix._asdict())
             new_sr.sign_writings = spud
-            output.append(new_sr)
-        return output
+            all_vids = []
+            no_rez = []
+            for m in elix.meanings:
+                all_vids += m.word_signs_url
+            if spud or all_vids:
+                output.append(new_sr)
+            else:
+                no_rez.append(new_sr)
+        return output, no_rez
+
+    @errorable(TimeoutError, ClientConnectorError)
+    @cacheable(elix_cache)
+    async def _elixSearch(self, vocab_list: list[str], sem: Semaphore) -> list[ElixResult]:
+        output = []
+        prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez.gloss in stl else True
+        async def callback(st: str, rez=None) -> None:
+            async with sem:
+                rez = await self.elix_scrap.searchWord(st)
+                output.append(rez)
+                return rez
+        (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(elix_cache, vocab_list, callback, prepare_output, output, True)
+        print("Searching "+ italic("elix-lsf.fr..."))
+        elix_co = [asyncio.ensure_future(cache_on_append_result(search_term=wrd, rez=None)) for wrd in uncached_vocab_list]
+        await tqdm.gather(*elix_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
+        return [o for o in output if o]
 
     @errorable(TimeoutError, ClientConnectorError)
     @cacheable(signpuddle_cache)
@@ -82,21 +108,22 @@ class VocabScrapper():
         signpuddle_co = [asyncio.ensure_future(cache_on_append_result(search_term=er, rez=None)) for er in uncached_vocab_list]
         await tqdm.gather(*signpuddle_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
         return output
-    
+
     @errorable(TimeoutError, ClientConnectorError)
-    @cacheable(elix_cache)
-    async def _elixSearch(self, vocab_list: list[str], sem: Semaphore) -> list[ElixResult]:
+    @cacheable(video_download_cache)
+    async def _downloadVideos(self, vocab_list: list[ElixResult], sem: Semaphore) -> list[ElixResult]:
         output = []
         prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez.gloss in stl else True
-        async def callback(st: str, rez=None) -> None:
+        async def callback(st: str, rez=ElixResult) -> None:
             async with sem:
-                rez = await self.elix_scrap.searchWord(st)
+                rez = await self.elix_scrap.downloadVideos(rez)
                 output.append(rez)
                 return rez
-        (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(elix_cache, vocab_list, callback, prepare_output, output, True)
-        print("Searching "+ italic("elix-lsf.fr..."))
-        elix_co = [asyncio.ensure_future(cache_on_append_result(search_term=wrd, rez=None)) for wrd in uncached_vocab_list]
-        await tqdm.gather(*elix_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
+        (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(video_download_cache, [rez.gloss for rez in vocab_list], callback, prepare_output, output, True)
+        uncached_vocab_list = [er for er in vocab_list if er.gloss in uncached_vocab_list]
+        print("Downloading and converting videos from "+ italic("elix-lsf.fr..."))
+        downloads_co = [asyncio.ensure_future(cache_on_append_result(search_term=er.gloss, rez=er)) for er in uncached_vocab_list]
+        await tqdm.gather(*downloads_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
         return output
 
     async def __aenter__(self):
@@ -106,7 +133,7 @@ class VocabScrapper():
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        self.session.close()
+        await self.session.close()
     
     def fromcache(self, cache: SearchCache, search_terms: list[str], callback: Callable[[Any], None] | None = None,  prepare_output_func: Callable[[Any, list[str]], None] | None = None, output_buffer: list = [], is_coroutine = False) -> tuple[list[str], list[Any], Callable[[str, Any], None] | Coroutine[Any, Any, Any]]:
         cache_data = cache.cache
