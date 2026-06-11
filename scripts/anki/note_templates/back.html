@@ -35,9 +35,13 @@
         const def_vids = document.querySelectorAll(".def_sign")
         if (def_vids.length > 0) {
             document.getElementById("show_def_sign").onclick = showAllDefSigns
+        } else {
+            showAllDefSigns()
         }
         if (all_sign_vids.length > 1){
             document.getElementById("show_all_signs").onclick = showAllSigns
+        } else {
+            showAllSigns()
         }
         all_sign_vids.forEach(x => x.style.display = "none")
         first_vid.style.display = ""

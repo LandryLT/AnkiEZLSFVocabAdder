@@ -1,4 +1,31 @@
 <div id="resti_main_container" class="main_container">
-    <div id="wordsigns">{{Word Signs}}</div>
-    <div id="signwritings">{{Sign Writings}}</div>
+    <div id="signs_container">
+        <div id="word_signs_container">
+            <div id="wordsigns">{{Word Signs}}</div>
+            <button id="show_all_signs">Show all signs</button>
+        </div>
+        <div id="signwritings">{{Sign Writings}}</div>
+    </div>
 </div>
+<script>
+    function showAllSigns(){
+        const all_vids = document.querySelectorAll("#wordsigns > .video")
+        all_vids.forEach(x => x.style.display = "")
+        document.getElementById("show_all_signs").style.display = "none"
+    }
+
+    function initCard(){
+        const first_vid = document.querySelector("#wordsigns > .video:first-child")
+        const all_sign_vids = document.querySelectorAll("#wordsigns > .video")
+        document.getElementById("defsigns").style.display = "none"
+        
+        if (all_sign_vids.length > 1){
+            document.getElementById("show_all_signs").onclick = showAllSigns
+        } else {
+            showAllSigns()
+        }
+        all_sign_vids.forEach(x => x.style.display = "none")
+        first_vid.style.display = ""
+    }
+    initCard()
+</script>

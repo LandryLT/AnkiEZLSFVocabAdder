@@ -1,9 +1,28 @@
 <div id="expr_main_container" class="main_container">
-    <div class="name_def">
+    <div class="def_container">
         <div class="name_type">
             {{Name}}
             {{Typology}}
         </div>
         <div id="definitions">{{Definitions}}</div>
+        <div id="defsigns"><div id="defsigns_vids">{{Definition Signs}}</div></div>
+        <button id="show_def_sign">Show definition in LSF</button>
     </div>
 </div>
+<script>
+    function showAllDefSigns(){
+        document.getElementById("defsigns").style.display = ""
+        document.getElementById("show_def_sign").style.display = "none"
+    }
+    
+    function initCard(){
+        document.getElementById("defsigns").style.display = "none"
+        const def_vids = document.querySelectorAll(".def_sign")
+        if (def_vids.length > 0) {
+            document.getElementById("show_def_sign").onclick = showAllDefSigns
+        } else {
+            showAllDefSigns()
+        }
+    }
+    initCard()
+</script>
