@@ -22,9 +22,9 @@ class scrapperConfigParser():
                     case "use_cache":
                         self.use_cache = self.parseBool(item)
                     case "delete_cache_on_complete":
-                        self.use_cache = self.parseBool(item)
+                        self.delete_cache_on_complete = self.parseBool(item)
                     case "delete_vocablist_on_complete":
-                        self.use_cache = self.parseBool(item)
+                        self.delete_vocablist_on_complete = self.parseBool(item)
                     case "anki_collection_file_path":
                         self.ankiConfig = self.ankiConfig._replace(col_path=self.parsePath(item))
                     case "anki_collection_deduplication":

@@ -33,8 +33,8 @@ class AnkiNoteGen():
         new_note["Name"] = f'<div id="name">{rez.gloss}</div>'
         new_note["Typology"] = f'<div id="typology">({rez.typology})</div>'
         new_note["Definitions"] = "".join([f'<div class="definition">{meaning.definition}</div>' for meaning in rez.meanings])
-        new_note["Word Signs"] = "".join(["".join([f'<div class="video word_sign"><video controls autoplay loop><source src="{self.addVideo(uri)}"></video></div>' for uri in meaning.word_signs_url]) for meaning in rez.meanings])
-        new_note["Definition Signs"] = "".join([f'<div class="video def_sign"><video controls><source src="{self.addVideo(meaning.def_signs_url)}"></video></div>' for meaning in rez.meanings])
+        new_note["Word Signs"] = "".join(["".join([f'<div class="video word_sign"><video autoplay loop playsinline webkit-playsinline muted preload="metadata"><source src="{self.addVideo(uri)}"></video></div>' for uri in meaning.word_signs_url]) for meaning in rez.meanings])
+        new_note["Definition Signs"] = "".join([f'<div class="video def_sign"><video controls preload="metadata"><source src="{self.addVideo(meaning.def_signs_url)}"></video></div>' for meaning in rez.meanings])
         new_note["Sign Writings"] = "".join([f'<div class="signwriting">{sw}</div>' for sw in rez.sign_writings])
         return new_note
 

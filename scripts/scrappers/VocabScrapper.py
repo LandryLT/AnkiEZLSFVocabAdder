@@ -81,7 +81,7 @@ class VocabScrapper():
     @cacheable(elix_cache)
     async def _elixSearch(self, vocab_list: list[str], sem: Semaphore) -> list[ElixResult]:
         output = []
-        prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez.gloss in stl else True
+        prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez and rez.gloss in stl else True
         async def callback(st: str, rez=None) -> None:
             async with sem:
                 rez = await self.elix_scrap.searchWord(st)
@@ -113,7 +113,9 @@ class VocabScrapper():
     @cacheable(video_download_cache)
     async def _downloadVideos(self, vocab_list: list[ElixResult], sem: Semaphore) -> list[ElixResult]:
         output = []
-        prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez.gloss in stl else True
+        def prepare_output(rez: ElixResult, stl: list[str]) -> None: 
+            if rez.gloss in stl:
+                output.append(rez) 
         async def callback(st: str, rez=ElixResult) -> None:
             async with sem:
                 rez = await self.elix_scrap.downloadVideos(rez)

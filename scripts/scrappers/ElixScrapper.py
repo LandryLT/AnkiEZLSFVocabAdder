@@ -5,9 +5,9 @@ import subprocess
 from uuid import uuid4
 import os
 import asyncio
-
-elix_cache = SearchCache("./cache/elix")
-video_download_cache = SearchCache("./cache/video_dnwld")
+from pathlib import Path
+elix_cache = SearchCache(Path("./cache/elix"))
+video_download_cache = SearchCache(Path("./cache/video_dnwld"))
 download_folder = "./cache/vids/src/"
 convert_folder = "./cache/vids/cnv/"
 
@@ -26,7 +26,6 @@ class ElixScrapper(Scrapper):
 
 
     async def downloadVideos(self, result: ElixResult) -> ElixResult:
-        # TODO: Caching seems to be broken, doesn't seems to read info from cache.
         download_co = []
         for m in result.meanings:
             for url in m.word_signs_url:
@@ -58,15 +57,15 @@ class ElixScrapper(Scrapper):
 
     def __convertVideo(self, in_path: str, out_path: str):
         subprocess.run([
-        "./ffmpeg/bin/ffmpeg.exe", 
-        "-hide_banner", "-loglevel", "error",
-        "-i", in_path, "-filter:v", "scale=360:-1",
-        "-c:v", "libvpx",
-        "-crf", "10",
-        "-b:v", "8M",
-        "-c:a", "libvorbis",
-        out_path
-    ], check=True)
+            "./ffmpeg/bin/ffmpeg.exe", 
+            "-hide_banner", "-loglevel", "error",
+            "-i", in_path, "-filter:v", "scale=360:-1,setsar=1",
+            "-c:v", "libvpx",
+            "-crf", "10",
+            "-b:v", "8M",
+            "-c:a", "libvorbis",
+            out_path
+        ], check=True)
 
 
     async def __searchWord(self, search_term: str) -> str:

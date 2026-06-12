@@ -5,6 +5,9 @@
     --moz-button-bg: -moz-linear-gradient(0deg,rgba(245, 245, 245, 1) 0%, rgba(255, 255, 255, 1) 100%);
     --webkit-button-bg: -webkit-linear-gradient(0deg,rgba(245, 245, 245, 1) 0%, rgba(255, 255, 255, 1) 100%);
     --button-border: #a4a4a4;
+	--button-color: #6a6a6a;
+	--button-shadow: 0 0.2em 0.2em 0 rgba(0,0,0,0.3);
+	user-select: none;
 }
 
 .night-mode {
@@ -14,24 +17,32 @@
     --moz-button-bg: -moz-linear-gradient(0deg,rgba(40, 40, 40, 1) 0%, rgba(55, 55, 55, 1) 100%);
     --webkit-button-bg: -webkit-linear-gradient(0deg,rgba(40, 40, 40, 1) 0%, rgba(55, 55, 55, 1) 100%);
     --button-border: #7a7a7a;
+	--button-color: #b5b5b5;
+	--button-shadow: 0 0.5em 0.8em 0 rgba(50, 50, 50, 0.3);
 }
 
 .card {
 	font-family: arial;
 	font-size: 1.25rem;
 	line-height: 1rem;
-	text-align: center;
+	text-align: left;
 	color: black;
 	background: white;
 }
 
-button {
+#show_def_sign, #show_all_signs {
 	background-color: var(--webkit-button-bg);
 	background-color: var(--moz-button-bg);
-	background-color: var(--button-bg);
+	background: var(--button-bg);
 	border-color: var(--button-border);
 	border-radius: 1rem;
 	margin: 0;
+	color: var(--button-color);
+	font-size: 0.75rem;
+	padding: 0.5rem;
+	box-shadow: var(--button-shadow);
+	-webkit-box-shadow: var(--button-shadow);
+	--moz-box-shadow: var(--button-shadow);
 }
 
 #show_all_signs{
@@ -47,22 +58,42 @@ button {
 #defsigns {
 	margin-top: 0.5rem;
 }
-.main_container, .def_container, #word_signs_container {
+.main_container, #word_signs_container{
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: start;
 }
 
-.def_container {
-	align-items: start;
-}
-
-
-.main_container, #signwritings, #signs_container{
+.main_container {
     display: flex;
     align-items: start;
     justify-content: start;
+}
+
+#definitions {
+    align-items: start;
+    justify-content: start;	
+}
+
+#signs_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#def_container {
+	align-items: start;
+	display: flex;
+    flex-direction: column;
+    justify-content: start;
+}
+
+#signwritings {
+   display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #signwritings{
@@ -97,7 +128,7 @@ button {
 
 .signwriting {
 	margin-left: 1rem;
-
+	margin-top: 1rem;
 	padding: 0.5rem;
 	align-items: center;
   justify-content: center;
@@ -110,7 +141,7 @@ button {
 }
 
 
-.name_type {
+#name_type {
 	display: flex;
 	align-items: start;
 	justify-content: left;
@@ -127,4 +158,16 @@ button {
 .definition {
 	font-size: 0.75em;
 	margin-top: 0.5em;
+}
+.video {
+    width: 100%;
+}
+
+.video > video {
+    max-width: 100%;
+    max-height: 55vh;
+    display: block;
+    object-fit: contain;
+    background: black;
+	aspect-ratio: auto;
 }
