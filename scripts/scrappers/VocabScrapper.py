@@ -80,17 +80,18 @@ class VocabScrapper():
     @errorable(TimeoutError, ClientConnectorError)
     @cacheable(elix_cache)
     async def _elixSearch(self, vocab_list: list[str], sem: Semaphore) -> list[ElixResult]:
-        output = []
-        prepare_output: Callable[[ElixResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez and rez.gloss in stl else True
+        search_results = []
+        prepare_output: Callable[[list[ElixResult], list[str]], None] = lambda rez, stl: search_results.append(rez) if rez and rez[0].gloss in stl else True
         async def callback(st: str, rez=None) -> None:
             async with sem:
                 rez = await self.elix_scrap.searchWord(st)
-                output.append(rez)
+                search_results.append(rez)
                 return rez
-        (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(elix_cache, vocab_list, callback, prepare_output, output, True)
+        (uncached_vocab_list, search_results, cache_on_append_result) = self.fromcache(elix_cache, vocab_list, callback, prepare_output, search_results, True)
         print("Searching "+ italic("elix-lsf.fr..."))
         elix_co = [asyncio.ensure_future(cache_on_append_result(search_term=wrd, rez=None)) for wrd in uncached_vocab_list]
         await tqdm.gather(*elix_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
+        output = [o for out in search_results for o in out]
         return [o for o in output if o]
 
     @errorable(TimeoutError, ClientConnectorError)

@@ -16,13 +16,13 @@ class ElixScrapper(Scrapper):
         super().__init__(session)
 
 
-    async def searchWord(self, search_term: str) -> ElixResult:
+    async def searchWord(self, search_term: str) -> list[ElixResult | None]:
         self.logger.info(f"Searching Elix.fr for {search_term}")
         rez = await self.__searchWord(search_term)
         if rez:
             return await self.__queryWord(rez)
         else:
-            return None
+            return [None]
 
 
     async def downloadVideos(self, result: ElixResult) -> ElixResult:
@@ -59,7 +59,7 @@ class ElixScrapper(Scrapper):
         subprocess.run([
             "./ffmpeg/bin/ffmpeg.exe", 
             "-hide_banner", "-loglevel", "error",
-            "-i", in_path, "-filter:v", "scale=360:-1,setsar=1",
+            "-i", in_path, "-filter:v", "scale=360:-1",
             "-c:v", "libvpx",
             "-crf", "10",
             "-b:v", "8M",
@@ -76,16 +76,20 @@ class ElixScrapper(Scrapper):
         return None
 
 
-    async def __queryWord(self, word: str) -> ElixResult:
+    async def __queryWord(self, word: str) -> list[ElixResult]:
         self.logger.debug(f"Getting data for {word}")
-        data = (await self._getJSONData("data", "https://api.elix-lsf.fr/words?q=", word))[0]
-        meanings = []
-        for m in data["meanings"]:
-            ws = [w["uri"] for w in m["wordSigns"]]
-            ds = None if not m["definitionSigns"] else m["definitionSigns"][0]["uri"]
-            meanings.append(ElixMeanings(m["definition"], ws, ds))
+        data = (await self._getJSONData("data", "https://api.elix-lsf.fr/words?q=", word))
+        output = []
+        for d in data:
+            meanings = []
+            if d["name"] == word:
+                for m in d["meanings"]:
+                    ws = [w["uri"] for w in m["wordSigns"]]
+                    ds = None if not m["definitionSigns"] else m["definitionSigns"][0]["uri"]
+                    meanings.append(ElixMeanings(m["definition"], ws, ds))
+                output.append(ElixResult(d["name"], d["typology"], meanings))
 
-        return ElixResult(data["name"], data["typology"], meanings)
+        return output
 
 
     @staticmethod
