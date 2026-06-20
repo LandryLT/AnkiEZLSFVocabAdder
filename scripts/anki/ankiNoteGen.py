@@ -29,13 +29,16 @@ class AnkiNoteGen():
         return self.col.media.add_file(filepath)
 
     def genNewNote(self, rez: ScrapperResult):
+        all_word_signs = [ws for meanings in rez.meanings for ws in meanings.word_signs_url]
+        if not any(all_word_signs):
+            return None
         new_note = self.col.new_note(self.model)
-        new_note["Name"] = f'<div id="name">{rez.gloss}</div>'
+        new_note["Name"] = '<div id="name">' + rez.gloss + ' ' + '{' + rez.typology + '}' + '</div>'
         new_note["Typology"] = f'<div id="typology">({rez.typology})</div>'
         new_note["Definitions"] = "".join([f'<div class="definition">{meaning.definition}</div>' for meaning in rez.meanings])
-        new_note["Word Signs"] = "".join(["".join([f'<div class="video word_sign"><video autoplay loop playsinline webkit-playsinline muted preload="metadata"><source src="{self.addVideo(uri)}"></video></div>' for uri in meaning.word_signs_url]) for meaning in rez.meanings])
-        new_note["Definition Signs"] = "".join([f'<div class="video def_sign"><video controls preload="metadata"><source src="{self.addVideo(meaning.def_signs_url)}"></video></div>' for meaning in rez.meanings])
-        new_note["Sign Writings"] = "".join([f'<div class="signwriting">{sw}</div>' for sw in rez.sign_writings])
+        new_note["Word Signs"] = "".join(["".join([f'<div class="video word_sign"><video autoplay loop playsinline webkit-playsinline muted preload="metadata"><source src="{self.addVideo(uri)}"></video></div>' for uri in meaning.word_signs_url if uri]) for meaning in rez.meanings])
+        new_note["Definition Signs"] = "".join([f'<div class="video def_sign"><video controls preload="metadata"><source src="{self.addVideo(meaning.def_signs_url)}"></video></div>' for meaning in rez.meanings if meaning.def_signs_url])
+        new_note["Sign Writings"] = "".join([f'<div class="signwriting">{sw}</div>' for sw in rez.sign_writings if sw])
         return new_note
 
     def submitNoteToDeck(self, note: Note):

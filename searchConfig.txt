@@ -1,4 +1,4 @@
-use_cache=YES
+use_cache=NO
 delete_cache_on_complete=NO
 delete_vocablist_on_complete=NO
 anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/EZAnki/collection.anki2

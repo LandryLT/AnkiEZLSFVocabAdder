@@ -20,6 +20,7 @@ async def main():
             rez, no_rez = await vs.searchTerms(vocab_list)
 
         new_notes = [ankifier.note_gen.genNewNote(r) for r in rez]
+        new_notes = [n for n in new_notes if n]
         resolved_notes = ankifier.resolveConflictingVocab(new_notes)
         for note in resolved_notes:
             ankifier.note_gen.submitNoteToDeck(note)

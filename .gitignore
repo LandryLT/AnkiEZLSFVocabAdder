@@ -1,6 +1,6 @@
 .venv
 __pycache__
 .vscode
-vocab2add.txt
+*vocab2add.txt
 cache
 ffmpeg

@@ -14,7 +14,9 @@
         document.getElementById("defsigns").style.display = ""
         document.getElementById("show_def_sign").style.display = "none"
     }
-    
+    function removeTyping() {
+        document.getElementById("name").innerText = document.getElementById("name").innerText.replace(/\{.*\}/, '')
+    }
     function initCard(){
         document.getElementById("defsigns").style.display = "none"
         const def_vids = document.querySelectorAll(".def_sign")
@@ -23,6 +25,7 @@
         } else {
             showAllDefSigns()
         }
+        removeTyping()
     }
     initCard()
 </script>

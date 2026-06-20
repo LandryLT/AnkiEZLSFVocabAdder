@@ -26,7 +26,9 @@
         document.getElementById("defsigns").style.display = ""
         document.getElementById("show_def_sign").style.display = "none"
     }
-    
+    function removeTyping() {
+        document.getElementById("name").innerText = document.getElementById("name").innerText.replace(/\{.*\}/, '')
+    }    
     function initCard(){
         const first_vid = document.querySelector("#wordsigns > .video:first-child")
         const all_sign_vids = document.querySelectorAll("#wordsigns > .video")
@@ -45,6 +47,7 @@
         }
         all_sign_vids.forEach(x => x.style.display = "none")
         first_vid.style.display = ""
+        removeTyping()
     }
     initCard()
 </script>

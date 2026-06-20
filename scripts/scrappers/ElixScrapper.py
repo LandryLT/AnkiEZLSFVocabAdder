@@ -31,7 +31,7 @@ class ElixScrapper(Scrapper):
             for url in m.word_signs_url:
                 download_co.append(self.__downloadVideo(url, result.gloss, "sign"))
             download_co.append(self.__downloadVideo(m.def_signs_url, result.gloss, "def")) if m.def_signs_url else None
-        downloaded_paths = await asyncio.gather(*download_co, return_exceptions=True)
+        downloaded_paths = await asyncio.gather(*download_co)
         new_meanings = []
         for m in result.meanings:
             new_word_sign = []
