@@ -5,7 +5,9 @@ import subprocess
 from uuid import uuid4
 import os
 import asyncio
+from asyncio import Semaphore
 from pathlib import Path
+import time
 elix_cache = SearchCache(Path("./cache/elix"))
 video_download_cache = SearchCache(Path("./cache/video_dnwld"))
 download_folder = "./cache/vids/src/"
@@ -25,12 +27,12 @@ class ElixScrapper(Scrapper):
             return [None]
 
 
-    async def downloadVideos(self, result: ElixResult) -> ElixResult:
+    async def downloadVideos(self, result: ElixResult, sem: Semaphore) -> ElixResult:
         download_co = []
         for m in result.meanings:
             for url in m.word_signs_url:
-                download_co.append(self.__downloadVideo(url, result.gloss, "sign"))
-            download_co.append(self.__downloadVideo(m.def_signs_url, result.gloss, "def")) if m.def_signs_url else None
+                download_co.append(self.__downloadVideo(url, result.gloss, "sign", sem))
+            download_co.append(self.__downloadVideo(m.def_signs_url, result.gloss, "def", sem)) if m.def_signs_url else None
         downloaded_paths = await asyncio.gather(*download_co)
         new_meanings = []
         for m in result.meanings:
@@ -41,25 +43,37 @@ class ElixScrapper(Scrapper):
             new_meanings.append(ElixMeanings(m.definition, new_word_sign, new_def_sign))
         return result._replace(meanings=new_meanings)
 
+    async def __downloadVideo(self, url:str, search_term:str, prefix:str, sem):
+        async with sem:
+            f_name = f"{prefix}_{search_term}_{uuid4()}"
+            download_path = download_folder + f"{f_name}.mp4"
+            output_path = convert_folder + f"{f_name}.webm"
+            await self.__download_file(url, download_path)
 
-    async def __downloadVideo(self, url:str, search_term:str, prefix:str):
-        f_name = f"{prefix}_{search_term}_{uuid4()}"
-        download_path = download_folder + f"{f_name}.mp4"
-        output_path = convert_folder + f"{f_name}.webm"
+        await asyncio.to_thread(self.__convertVideo, download_path, output_path)
+        return output_path
+
+    async def __download_file(self, url, download_path):
         async with self.session.get(url) as resp:
             resp.raise_for_status()
             with open(download_path, "wb") as f:
+                total = 0
                 async for chunk in resp.content.iter_chunked(1024 * 64):
+                    total += len(chunk)
                     f.write(chunk)
-        self.__convertVideo(download_path, output_path)
-        return output_path
+            
+                f.flush()
+                os.fsync(f.fileno())
 
 
     def __convertVideo(self, in_path: str, out_path: str):
         subprocess.run([
-            "./ffmpeg/bin/ffmpeg.exe", 
-            "-hide_banner", "-loglevel", "error",
-            "-i", in_path, "-filter:v", "scale=360:-1",
+            "./ffmpeg/bin/ffmpeg.exe",
+            "-hide_banner", "-loglevel", "panic",
+            "-err_detect", "ignore_err",
+            "-fflags", "+discardcorrupt",
+            "-i", in_path,
+            "-vf", "scale=360:-1",
             "-c:v", "libvpx",
             "-crf", "10",
             "-b:v", "8M",

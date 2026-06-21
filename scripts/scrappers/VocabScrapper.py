@@ -55,7 +55,7 @@ class VocabScrapper():
         elix_sem = Semaphore(10)
         clearConsole()
         elix_results = await self._elixSearch(vocab_list, elix_sem)
-        elix_downloads_sem = Semaphore(3)
+        elix_downloads_sem = Semaphore(10)
         clearConsole()
         dwnl_elix_results = await self._downloadVideos(elix_results, elix_downloads_sem)
         sp_sem = Semaphore(1)
@@ -118,10 +118,9 @@ class VocabScrapper():
             if rez.gloss in stl:
                 output.append(rez) 
         async def callback(st: str, rez=ElixResult) -> None:
-            async with sem:
-                rez = await self.elix_scrap.downloadVideos(rez)
-                output.append(rez)
-                return rez
+            rez = await self.elix_scrap.downloadVideos(rez, sem)
+            output.append(rez)
+            return rez
         (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(video_download_cache, [rez.gloss for rez in vocab_list], callback, prepare_output, output, True)
         uncached_vocab_list = [er for er in vocab_list if er.gloss in uncached_vocab_list]
         print("Downloading and converting videos from "+ italic("elix-lsf.fr..."))
