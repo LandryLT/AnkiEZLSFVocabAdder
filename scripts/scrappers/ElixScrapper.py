@@ -8,6 +8,7 @@ import asyncio
 from asyncio import Semaphore
 from pathlib import Path
 import time
+from difflib import SequenceMatcher
 elix_cache = SearchCache(Path("./cache/elix"))
 video_download_cache = SearchCache(Path("./cache/video_dnwld"))
 download_folder = "./cache/vids/src/"
@@ -85,9 +86,13 @@ class ElixScrapper(Scrapper):
     async def __searchWord(self, search_term: str) -> str:
         self.logger.debug(f"Checking search term for {search_term}")
         data = (await self._getJSONData("data", "https://api.elix-lsf.fr/suggests?q=", search_term, "&limit=10&fuzzy=1"))
+        most_similar_rez = [None, 0.0]
         if data:
-            return data[0]
-        return None
+            for rez in data:
+                similarity = SequenceMatcher(None, search_term, rez).ratio()
+                if similarity >= most_similar_rez[1]:
+                    most_similar_rez = [rez, similarity]
+        return most_similar_rez[0]
 
 
     async def __queryWord(self, word: str) -> list[ElixResult]:

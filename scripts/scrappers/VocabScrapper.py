@@ -8,7 +8,7 @@ from scripts.caching.cacheSearch import SearchCache
 import functools
 from typing import Callable, Any, Coroutine
 import asyncio
-from asyncio import Semaphore
+from asyncio import Semaphore, Task
 from asyncio.exceptions import TimeoutError
 # from types import CoroutineType
 
@@ -40,8 +40,9 @@ def errorable(*error_types):
                         print(grey(f"Retry counter: {counter}"))
                     output = await f(*args, **kwargs)
                     return output
-                except error_types:
+                except error_types as e:
                     counter += 1
+                    # raise e
                 except Exception as e:
                     raise e
         return wrap
@@ -54,7 +55,7 @@ class VocabScrapper():
     async def searchTerms(self, vocab_list: list[str]):
         elix_sem = Semaphore(10)
         clearConsole()
-        elix_results = await self._elixSearch(vocab_list, elix_sem)
+        elix_results = self.__removeMeaningsWithNoSigns(await self._elixSearch(vocab_list, elix_sem))
         elix_downloads_sem = Semaphore(10)
         clearConsole()
         dwnl_elix_results = await self._downloadVideos(elix_results, elix_downloads_sem)
@@ -81,7 +82,7 @@ class VocabScrapper():
     @cacheable(elix_cache)
     async def _elixSearch(self, vocab_list: list[str], sem: Semaphore) -> list[ElixResult]:
         search_results = []
-        prepare_output: Callable[[list[ElixResult], list[str]], None] = lambda rez, stl: search_results.append(rez) if rez and rez[0].gloss in stl else True
+        prepare_output: Callable[[list[ElixResult], list[str]], None] = lambda rez, stl: search_results.append(rez) if rez and rez[0] and rez[0].gloss in stl else True
         async def callback(st: str, rez=None) -> None:
             async with sem:
                 rez = await self.elix_scrap.searchWord(st)
@@ -124,8 +125,12 @@ class VocabScrapper():
         (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(video_download_cache, [rez.gloss for rez in vocab_list], callback, prepare_output, output, True)
         uncached_vocab_list = [er for er in vocab_list if er.gloss in uncached_vocab_list]
         print("Downloading and converting videos from "+ italic("elix-lsf.fr..."))
-        downloads_co = [asyncio.ensure_future(cache_on_append_result(search_term=er.gloss, rez=er)) for er in uncached_vocab_list]
-        await tqdm.gather(*downloads_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
+        downloads_co: list[Task] = [asyncio.ensure_future(cache_on_append_result(search_term=er.gloss, rez=er)) for er in uncached_vocab_list]
+        try:
+            await tqdm.gather(*downloads_co, bar_format=tqdm_format, leave=False, total=len(vocab_list), initial=len(vocab_list)-len(uncached_vocab_list))
+        finally:
+            for co in downloads_co:
+                co.cancel()
         return output
 
     async def __aenter__(self):
@@ -160,3 +165,15 @@ class VocabScrapper():
                     rez = callback(search_term, rez)
                 cache.addToCache(search_term, rez)
         return (uncached_search_terms, cached_objects, on_append_result)
+
+    def __removeMeaningsWithNoSigns(self, elix_results: list[ElixResult]) -> list[ElixResult]:
+        output = []
+        for rez in elix_results:
+            out_meanings = []
+            for m in rez.meanings:
+                if m.word_signs_url:
+                    out_meanings.append(m)
+            if out_meanings:
+                output.append(rez)
+
+        return output
