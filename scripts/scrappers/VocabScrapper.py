@@ -64,6 +64,7 @@ class VocabScrapper():
         sp_results = await self._SPSearch(dwnl_elix_results, sp_sem)
         clearConsole()
 
+        no_rez = []
         output = []
         for elix, spud in zip(dwnl_elix_results, [sp.sign_writings for sp in sp_results]):
             new_sr = ScrapperResult(**elix._asdict())
